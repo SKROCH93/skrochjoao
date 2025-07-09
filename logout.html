@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logout - SkrochOS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Fira Code', monospace;
+            background-color: #1a1a1a;
+            color: #A3BE8C;
+        }
+    </style>
+</head>
+<body class="antialiased flex items-center justify-center h-screen p-4">
+
+    <div id="logout-terminal" class="w-full max-w-3xl">
+        <div id="terminal-output"></div>
+        <a href="login.html" id="back-to-login" class="hidden mt-8 inline-block bg-[#88C0D0] hover:bg-[#81A1C1] text-[#2E3440] font-bold py-2 px-4 rounded-md transition-colors">
+            [ Voltar ao Login ]
+        </a>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const terminalOutput = document.getElementById('terminal-output');
+            const backToLoginButton = document.getElementById('back-to-login');
+            
+            const logoutSequence = [
+                { text: 'skroch@SkrochOS:~$ sudo shutdown -h now' },
+                { text: '[ ok ] Stopping all processes...', speed: 30 },
+                { text: '[ ok ] Unmounting filesystems.' },
+                { text: '[ ok ] Deactivating swap...' },
+                { text: 'SkrochOS will now halt.' },
+                { text: 'Até logo! Obrigado por visitar.' }
+            ];
+
+            function typeSequence(lines, onFinished) {
+                let lineIndex = 0;
+                let charIndex = 0;
+                terminalOutput.innerHTML = '';
+
+                function typeChar() {
+                    if (lineIndex < lines.length) {
+                        const currentLine = lines[lineIndex];
+                        if (charIndex === 0) {
+                            terminalOutput.innerHTML += '<p class="m-0 p-0">';
+                        }
+                        if (charIndex < currentLine.text.length) {
+                            terminalOutput.lastChild.innerHTML += currentLine.text.charAt(charIndex);
+                            charIndex++;
+                            setTimeout(typeChar, currentLine.speed || 50);
+                        } else {
+                            terminalOutput.lastChild.innerHTML += '</p>';
+                            lineIndex++;
+                            charIndex = 0;
+                            setTimeout(typeChar, 300);
+                        }
+                    } else if (onFinished) {
+                        onFinished();
+                    }
+                }
+                typeChar();
+            }
+
+            typeSequence(logoutSequence, () => {
+                backToLoginButton.classList.remove('hidden');
+            });
+        });
+    </script>
+</body>
+</html>

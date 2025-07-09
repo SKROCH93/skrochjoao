@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkrochOS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <style>
+        body {
+            font-family: 'Fira Code', monospace;
+            background-color: #2E3440;
+            background-image: url('https://images.unsplash.com/photo-1528722828814-77b9b83aafb2?q=80&w=2070&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            color: #D8DEE9;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .nord-frost-3 { color: #88C0D0; }
+        .nord-aurora-green { color: #A3BE8C; }
+        .nord-aurora-yellow { color: #EBCB8B; }
+        .nord-aurora-red { color: #BF616A; }
+        .nord-aurora-purple { color: #B48EAD; }
+
+        .window-title-bar { cursor: move; }
+        .prompt > span:first-child { color: #A3BE8C; }
+        .prompt > span:last-child { color: #81A1C1; }
+        .command { color: #EBCB8B; }
+        .ai-modal { transition: opacity 0.3s ease; }
+        .modal-content .loader { margin: 2rem auto; border-top-color: #88C0D0; }
+        
+        .terminal-window {
+            transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+            position: absolute;
+            z-index: 10;
+        }
+        
+        #desktop-icons-container {
+            position: relative;
+            width: 100%;
+            height: calc(100% - 32px);
+        }
+        .desktop-icon {
+            position: absolute;
+            cursor: grab;
+        }
+        .desktop-icon.dragging {
+            cursor: grabbing;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="w-full h-full flex items-center justify-center">
+        <div id="login-box" class="w-full max-w-sm bg-[#2E3440]/80 backdrop-blur-md p-8 rounded-lg shadow-2xl border border-[#4C566A] text-center">
+            <div class="mb-8">
+                <i class='bx bxs-user-circle text-7xl text-[#88C0D0]'></i>
+                <h1 class="text-2xl font-bold mt-2">skroch</h1>
+                <p class="text-sm text-gray-400">Bem-vindo ao SkrochOS</p>
+            </div>
+            <button id="login-button" class="w-full bg-[#88C0D0] hover:bg-[#81A1C1] text-[#2E3440] font-bold py-3 rounded-md transition-colors">
+                Iniciar Sessão
+            </button>
+        </div>
+    </div>
+
+    <!-- Desktop Screen -->
+    <div id="desktop-screen" class="hidden w-full h-full">
+        <div id="top-bar" class="bg-[#2E3440]/80 backdrop-blur-sm w-full h-8 flex justify-between items-center px-4 text-sm text-[#ECEFF4] shadow-md fixed top-0 left-0 z-20">
+            <div><span class="font-bold">SkrochOS</span></div>
+            <div id="clock" class="font-semibold"></div>
+            <div><span class="font-bold">skroch</span></div>
+        </div>
+
+        <div id="desktop-icons-container" class="pt-8">
+            <button data-command="home" class="desktop-icon text-center text-white flex flex-col items-center space-y-2 hover:bg-white/10 p-2 rounded-lg w-28">
+                <i class='bx bxs-home text-5xl'></i>
+                <span>Home</span>
+            </button>
+            <button data-command="sobre" class="desktop-icon text-center text-white flex flex-col items-center space-y-2 hover:bg-white/10 p-2 rounded-lg w-28">
+                <i class='bx bxs-user-circle text-5xl'></i>
+                <span>Sobre.sh</span>
+            </button>
+            <button data-command="competencias" class="desktop-icon text-center text-white flex flex-col items-center space-y-2 hover:bg-white/10 p-2 rounded-lg w-28">
+                <i class='bx bxs-terminal text-5xl'></i>
+                <span>Competências.sh</span>
+            </button>
+            <button data-command="projetos" class="desktop-icon text-center text-white flex flex-col items-center space-y-2 hover:bg-white/10 p-2 rounded-lg w-28">
+                <i class='bx bxs-folder text-5xl'></i>
+                <span>Projetos.sh</span>
+            </button>
+            <button data-command="formacao" class="desktop-icon text-center text-white flex flex-col items-center space-y-2 hover:bg-white/10 p-2 rounded-lg w-28">
+                <i class='bx bxs-graduation text-5xl'></i>
+                <span>Formação.sh</span>
+            </button>
+            <button data-command="contato" class="desktop-icon text-center text-white flex flex-col items-center space-y-2 hover:bg-white/10 p-2 rounded-lg w-28">
+                <i class='bx bxs-envelope text-5xl'></i>
+                <span>Contato.sh</span>
+            </button>
+            <button data-command="logout" class="desktop-icon text-center text-white flex flex-col items-center space-y-2 hover:bg-white/10 p-2 rounded-lg w-28">
+                <i class='bx bxs-power-off text-5xl nord-aurora-red'></i>
+                <span>Sair</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Logout Screen -->
+    <div id="logout-screen" class="hidden w-full h-full flex items-center justify-center p-4 bg-[#1a1a1a]">
+        <div id="logout-terminal" class="w-full max-w-3xl">
+            <div id="terminal-output"></div>
+            <button id="back-to-login" class="hidden mt-8 bg-[#88C0D0] hover:bg-[#81A1C1] text-[#2E3440] font-bold py-2 px-4 rounded-md transition-colors">
+                [ Voltar ao Login ]
+            </button>
+        </div>
+    </div>
+
+    <div id="ai-suggestion-modal" class="ai-modal fixed inset-0 bg-black/60 z-[1001] flex items-center justify-center p-4 opacity-0 pointer-events-none">
+        <div class="bg-[#2E3440] rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col border border-[#4C566A]">
+            <div class="flex justify-between items-center p-3 border-b border-gray-700 bg-[#3B4252]">
+                <h3 id="suggestion-modal-title" class="text-md font-bold text-gradient">System Dialog</h3>
+                <button data-close-modal="ai-suggestion-modal" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div id="suggestion-modal-content" class="p-6 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginScreen = document.getElementById('login-screen');
+            const desktopScreen = document.getElementById('desktop-screen');
+            const logoutScreen = document.getElementById('logout-screen');
+            
+            const loginButton = document.getElementById('login-button');
+            const backToLoginButton = document.getElementById('back-to-login');
+
+            const clockElement = document.getElementById('clock');
+            const desktopIcons = document.querySelectorAll('.desktop-icon');
+            
+            // --- Screen Manager ---
+            function showScreen(screen) {
+                loginScreen.classList.add('hidden');
+                desktopScreen.classList.add('hidden');
+                logoutScreen.classList.add('hidden');
+                screen.classList.remove('hidden');
+            }
+
+            // --- Login/Logout Logic ---
+            if (sessionStorage.getItem('isLoggedIn_SkrochOS') === 'true') {
+                showScreen(desktopScreen);
+            } else {
+                showScreen(loginScreen);
+            }
+
+            loginButton.addEventListener('click', () => {
+                sessionStorage.setItem('isLoggedIn_SkrochOS', 'true');
+                showScreen(desktopScreen);
+            });
+
+            backToLoginButton.addEventListener('click', () => {
+                showScreen(loginScreen);
+            });
+
+            function handleLogout() {
+                sessionStorage.removeItem('isLoggedIn_SkrochOS');
+                showScreen(logoutScreen);
+                runLogoutSequence();
+            }
+
+            // --- Gemini API Call ---
+            async function generateContent(prompt) {
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+                try {
+                    const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                    const result = await response.json();
+                    if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts) {
+                        return result.candidates[0].content.parts[0].text;
+                    }
+                    return "Resposta da API em formato inesperado.";
+                } catch (error) {
+                    console.error("Error calling Gemini API:", error);
+                    return "Erro ao contatar a IA. Tente novamente.";
+                }
+            }
+
+            // --- Modal Logic ---
+            function showModal(modalId, title, content) {
+                const modal = document.getElementById(modalId);
+                modal.querySelector('.p-6').innerHTML = content;
+                if (title) modal.querySelector('h3').textContent = title;
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+            }
+            document.querySelectorAll('[data-close-modal]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const modal = document.getElementById(btn.dataset.closeModal);
+                    modal.classList.add('opacity-0', 'pointer-events-none');
+                });
+            });
+
+            const projectsData = {
+                'receitas': { title: 'Receitas Técnicas', description: 'Aplicação web para busca e visualização de receitas.', tech: 'PHP, MySQL, Bootstrap' },
+                'landingpage': { title: 'Landing Page Pessoal', description: 'Landing page moderna e responsiva.', tech: 'HTML5, SASS, JavaScript' }
+            };
+            
+            const contentMap = {
+                sobre: `<p>Meu nome é João Skroch, tenho 32 anos e resido em Curitiba. Decidi mergulhar de cabeça no universo da tecnologia. Após concluir duas formações completas em desenvolvimento web, possuo uma base robusta em front-end e back-end e estou pronto para aplicar meu conhecimento, aprender com profissionais experientes e contribuir para o crescimento da empresa.</p>`,
+                competencias: `<p class="nord-aurora-yellow mb-2">== Habilidades Principais ==</p><div class="grid grid-cols-2 gap-x-4 gap-y-1"><span>HTML5</span><span class="nord-aurora-green">|||||||||| 95%</span><span>CSS3/SASS</span><span class="nord-aurora-green">|||||||||  90%</span><span>JavaScript</span><span class="nord-aurora-green">||||||||   80%</span><span>PHP (OO)</span><span class="nord-aurora-yellow">|||||||    75%</span><span>MySQL</span><span class="nord-aurora-yellow">|||||||    70%</span><span>Bootstrap</span><span class="nord-aurora-green">|||||||||  90%</span><span>Git/GitHub</span><span class="nord-aurora-red">|||||      60%</span></div>`,
+                projetos: `<div class="space-y-4"><div><p><span class="nord-frost-3">drwxr-xr-x</span> <a href="https://receitastecnicas.web.app/" target="_blank" class="underline nord-aurora-yellow hover:nord-aurora-purple">Receitas_Tecnicas/</a> <a href="#" class="ai-project-link" data-project="receitas">[sugerir_updates]</a></p></div><div><p><span class="nord-frost-3">drwxr-xr-x</span> <a href="https://skroch93.github.io/joaoskroch/" target="_blank" class="underline nord-aurora-yellow hover:nord-aurora-purple">Landing_Page_Pessoal/</a> <a href="#" class="ai-project-link" data-project="landingpage">[sugerir_updates]</a></p></div></div>`,
+                formacao: `<div class="space-y-4"><div><p class="nord-aurora-yellow"># Domine Web - 20 Cursos em 1</p><p>> Danki Code</p><p class="text-sm text-gray-400">> Formação Full-Stack intensiva com mais de 2000 aulas, cobrindo do básico ao avançado em HTML5, CSS3, SASS, Bootstrap, JavaScript (ES6+), PHP Orientado a Objetos, MySQL, e desenvolvimento de APIs.</p></div><div class="mt-4"><p class="nord-aurora-yellow"># MCWD 4.0 - Web Designer</p><p>> Master House</p><p class="text-sm text-gray-400">> Certificação focada em design de interfaces web, abordando princípios de usabilidade (UX/UI), criação de layouts responsivos e otimização de mídias para performance web.</p></div></div>`,
+                contato: `<p>Você pode me encontrar nos seguintes canais:</p><ul class="list-disc list-inside mt-2"><li>Email: <a href="mailto:skroch.joao@gmail.com" class="underline nord-aurora-yellow">skroch.joao@gmail.com</a></li><li>LinkedIn: <a href="https://linkedin.com/in/joão-skroch-882878178" target="_blank" class="underline nord-aurora-yellow">/joão-skroch-882878178</a></li><li>GitHub: <a href="https://github.com/SKROCH93" target="_blank" class="underline nord-aurora-yellow">/SKROCH93</a></li></ul>`
+            };
+            
+            const bootSequence = [
+                'Booting SkrochOS v3.1 (Unified)...',
+                'Welcome to my portfolio. Click the desktop icons to begin.'
+            ];
+
+            const logoutSequence = [
+                { text: 'skroch@SkrochOS:~$ sudo shutdown -h now' },
+                { text: '[ ok ] Stopping all processes...', speed: 30 },
+                { text: '[ ok ] Unmounting filesystems.' },
+                { text: '[ ok ] Deactivating swap...' },
+                { text: 'SkrochOS will now halt.' },
+                { text: 'Até logo! Obrigado por visitar.' }
+            ];
+
+            function runLogoutSequence() {
+                const terminalOutput = document.getElementById('terminal-output');
+                let lineIndex = 0;
+                let charIndex = 0;
+                terminalOutput.innerHTML = '';
+
+                function typeChar() {
+                    if (lineIndex < logoutSequence.length) {
+                        const currentLine = logoutSequence[lineIndex];
+                        if (charIndex === 0) terminalOutput.innerHTML += '<p class="m-0 p-0">';
+                        if (charIndex < currentLine.text.length) {
+                            terminalOutput.lastChild.innerHTML += currentLine.text.charAt(charIndex);
+                            charIndex++;
+                            setTimeout(typeChar, currentLine.speed || 50);
+                        } else {
+                            terminalOutput.lastChild.innerHTML += '</p>';
+                            lineIndex++;
+                            charIndex = 0;
+                            setTimeout(typeChar, 300);
+                        }
+                    } else {
+                        backToLoginButton.classList.remove('hidden');
+                    }
+                }
+                typeChar();
+            }
+
+            const windowManager = {
+                openWindows: {},
+                highestZ: 10,
+                createWindow(command) {
+                    if (this.openWindows[command]) {
+                        this.focusWindow(command);
+                        return;
+                    }
+
+                    const windowEl = document.createElement('div');
+                    windowEl.className = 'terminal-window w-[90vw] h-[80vh] md:w-[700px] md:h-[500px] bg-[#2E3440]/90 backdrop-blur-md rounded-lg shadow-2xl flex flex-col overflow-hidden border border-[#4C566A]';
+                    
+                    this.highestZ++;
+                    windowEl.style.zIndex = this.highestZ;
+                    
+                    const randomX = (Math.random() - 0.5) * 100;
+                    const randomY = (Math.random() - 0.5) * 50;
+                    windowEl.style.left = `calc(50% + ${randomX}px)`;
+                    windowEl.style.top = `calc(55% + ${randomY}px)`;
+                    windowEl.style.transform = 'translate(-50%, -50%)';
+
+                    const capitalizedCommand = command.charAt(0).toUpperCase() + command.slice(1);
+                    const title = (command === 'home') ? '~' : `~/${capitalizedCommand}`;
+                    const prompt = `<p><span class="prompt"><span>skroch@SkrochOS</span>:<span>${title}</span>$ </span><span class="command">${command === 'home' ? 'welcome' : `./${command}.sh`}</span></p>`;
+                    const output = (command === 'home') ? bootSequence.join('<br>') : contentMap[command];
+
+                    windowEl.innerHTML = `
+                        <div class="window-title-bar h-8 bg-[#3B4252] flex items-center justify-between px-3 flex-shrink-0">
+                            <span class="window-title-text text-sm font-semibold text-[#ECEFF4]">skroch@SkrochOS: ${title}</span>
+                            <div class="flex space-x-2">
+                                <button class="close-btn w-3 h-3 bg-[#BF616A] rounded-full hover:bg-red-500"></button>
+                                <div class="w-3 h-3 bg-[#EBCB8B] rounded-full"></div>
+                                <div class="w-3 h-3 bg-[#A3BE8C] rounded-full"></div>
+                            </div>
+                        </div>
+                        <div class="terminal-content p-4 overflow-y-auto flex-grow">
+                            ${prompt}<div class="mt-2">${output}</div>
+                        </div>
+                    `;
+
+                    document.body.appendChild(windowEl);
+                    this.openWindows[command] = { element: windowEl, z: this.highestZ };
+                    this.makeDraggable(windowEl);
+                    this.attachEventListeners(windowEl, command);
+                },
+                focusWindow(command) {
+                    this.highestZ++;
+                    this.openWindows[command].element.style.zIndex = this.highestZ;
+                },
+                closeWindow(command) {
+                    this.openWindows[command].element.remove();
+                    delete this.openWindows[command];
+                },
+                makeDraggable(windowEl) {
+                    const titleBar = windowEl.querySelector('.window-title-bar');
+                    let isDragging = false, offsetX, offsetY;
+                    titleBar.addEventListener('mousedown', (e) => {
+                        isDragging = true;
+                        offsetX = e.clientX - windowEl.offsetLeft;
+                        offsetY = e.clientY - windowEl.offsetTop;
+                        this.focusWindow(windowEl.dataset.command);
+                    });
+                    document.addEventListener('mousemove', (e) => {
+                        if (isDragging) {
+                            let newX = e.clientX - offsetX;
+                            let newY = e.clientY - offsetY;
+                            const Vw = window.innerWidth, Vh = window.innerHeight;
+                            newX = Math.max(0, Math.min(newX, Vw - windowEl.offsetWidth));
+                            newY = Math.max(32, Math.min(newY, Vh - windowEl.offsetHeight));
+                            windowEl.style.left = `${newX}px`;
+                            windowEl.style.top = `${newY}px`;
+                        }
+                    });
+                    document.addEventListener('mouseup', () => { isDragging = false; });
+                },
+                attachEventListeners(windowEl, command) {
+                    windowEl.dataset.command = command;
+                    windowEl.querySelector('.close-btn').addEventListener('click', () => this.closeWindow(command));
+                    windowEl.addEventListener('mousedown', () => this.focusWindow(command));
+                    windowEl.querySelector('.terminal-content').addEventListener('click', async (e) => {
+                        if (e.target.classList.contains('ai-project-link')) {
+                            e.preventDefault();
+                            const projectId = e.target.dataset.project;
+                            const project = projectsData[projectId];
+                            const prompt = `Como um gerente de produto sênior, sugira 3 próximos passos ou funcionalidades para evoluir o seguinte projeto de um desenvolvedor júnior chamado João Skroch. Seja encorajador e forneça sugestões práticas. Formate a resposta como uma lista com títulos em negrito. Projeto: "${project.title}". Descrição: "${project.description}". Tecnologias: "${project.tech}".`;
+                            showModal('ai-suggestion-modal', `Sugerindo passos para ${project.title}...`, '<div class="loader"></div>');
+                            const result = await generateContent(prompt);
+                            const formattedResult = result.replace(/\*\*(.*?)\*\*/g, '<strong class="nord-aurora-yellow">$1</strong>').replace(/\n/g, '<br>');
+                            document.getElementById('suggestion-modal-content').innerHTML = formattedResult;
+                        }
+                    });
+                }
+            };
+            
+            function updateClock() {
+                const now = new Date();
+                clockElement.textContent = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            }
+            setInterval(updateClock, 1000);
+            updateClock();
+
+            function arrangeIcons() {
+                const iconWidth = 112;
+                const iconHeight = 112;
+                const gap = 16;
+                const topBarHeight = 32;
+                const iconsPerColumn = Math.floor((window.innerHeight - topBarHeight - gap) / iconHeight);
+
+                desktopIcons.forEach((icon, index) => {
+                    const col = Math.floor(index / iconsPerColumn);
+                    const row = index % iconsPerColumn;
+                    icon.style.left = `${gap + col * (iconWidth + gap)}px`;
+                    icon.style.top = `${gap + row * (iconHeight + gap)}px`;
+                });
+            }
+            arrangeIcons();
+            window.addEventListener('resize', arrangeIcons);
+
+            desktopIcons.forEach(icon => {
+                let isDragging = false;
+                let hasDragged = false;
+                let offsetX, offsetY;
+
+                icon.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    hasDragged = false;
+                    icon.classList.add('dragging');
+                    offsetX = e.clientX - icon.getBoundingClientRect().left;
+                    offsetY = e.clientY - icon.getBoundingClientRect().top;
+                });
+
+                document.addEventListener('mousemove', (e) => {
+                    if (isDragging) {
+                        hasDragged = true;
+                        let newX = e.clientX - offsetX;
+                        let newY = e.clientY - offsetY;
+                        const Vw = window.innerWidth, Vh = window.innerHeight;
+                        const topBarHeight = 32;
+                        newX = Math.max(0, Math.min(newX, Vw - icon.offsetWidth));
+                        newY = Math.max(topBarHeight, Math.min(newY, Vh - icon.offsetHeight));
+                        icon.style.left = `${newX}px`;
+                        icon.style.top = `${newY}px`;
+                    }
+                });
+
+                document.addEventListener('mouseup', () => {
+                    isDragging = false;
+                    icon.classList.remove('dragging');
+                });
+
+                icon.addEventListener('click', (e) => {
+                    if(hasDragged) {
+                        e.preventDefault();
+                        return;
+                    }
+                    const command = icon.getAttribute('data-command');
+                    if (command === 'logout') {
+                        handleLogout();
+                    } else {
+                        windowManager.createWindow(command);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
